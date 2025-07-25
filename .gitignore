@@ -1,1 +1,16 @@
 anotacoes.txt
+# Laravel padrão
+/vendor
+/node_modules
+/public/storage
+/storage/*.key
+.env
+.env.*
+Homestead.json
+Homestead.yaml
+/.idea
+/.vscode
+/.phpunit.result.cache
+.phpunit.result.cache
+/.DS_Store
+Thumbs.db
