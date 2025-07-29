@@ -1,39 +1,62 @@
 <?php
 
+use App\Http\Controllers\BusinessController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicBookingController;
+use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
+// Rota da página inicial.
 Route::get('/', function () {
     return view('welcome');
 });
 
-<<<<<<< HEAD
-/*Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');*/
+//======================================================================
+// ROTAS PÚBLICAS (APIs e rotas específicas)
+//======================================================================
 
-// Grupo de rotas protegidas: só acessível para usuários autenticados
-//O uso do Route::middleware('auth') é uma prática comum no Laravel para proteger áreas do sistema que exigem login, como perfil, dashboard e cadastro de negócios.
-=======
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Rota para a nossa API interna de disponibilidade que retorna JSON.
+Route::get('/api/availability/service/{service}/date/{date}', [PublicBookingController::class, 'getAvailability'])->name('public.booking.availability');
 
->>>>>>> 47529ff7a1f3e27164265285d4e77ad3183a1abb
+// Rota para salvar o agendamento final feito pelo cliente.
+Route::post('/booking/store', [PublicBookingController::class, 'storeBooking'])->name('public.booking.store');
+
+
+//======================================================================
+// ROTAS PRIVADAS (Exigem que o usuário esteja autenticado)
+//======================================================================
+
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-<<<<<<< HEAD
-
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 
-    Route::resource('business', App\Http\Controllers\BusinessController::class)
-        ->only(['create', 'store']); 
-=======
->>>>>>> 47529ff7a1f3e27164265285d4e77ad3183a1abb
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::resource('business', BusinessController::class)->only(['create', 'store']);
+    Route::resource('service', ServiceController::class);
+
+    Route::get('/schedule/edit', [ScheduleController::class, 'edit'])->name('schedule.edit');
+    Route::put('/schedule/update', [ScheduleController::class, 'update'])->name('schedule.update');
 });
 
+
+//======================================================================
+// ORDEM FINAL DAS ROTAS
+//======================================================================
+
+// 1. Carrega todas as rotas de autenticação do Breeze (/login, /register, etc.).
 require __DIR__.'/auth.php';
+
+// 2. POR ÚLTIMO, a rota "apanha-tudo" do slug do negócio.
+//    Agora, se uma rota como /login for encontrada acima, o Laravel usá-la-á primeiro.
+Route::get('/{business:slug}', [PublicBookingController::class, 'show'])->name('public.booking.show');
