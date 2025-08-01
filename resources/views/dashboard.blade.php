@@ -31,6 +31,10 @@
                             class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
                             Definir Horários
                             </a>
+                            <a href="{{ route('appointments.index') }}"
+                            class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                            Ver Agendamentos
+                            </a>
                         </div>
                     @else
 

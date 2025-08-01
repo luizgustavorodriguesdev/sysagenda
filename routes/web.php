@@ -47,6 +47,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/schedule/edit', [ScheduleController::class, 'edit'])->name('schedule.edit');
     Route::put('/schedule/update', [ScheduleController::class, 'update'])->name('schedule.update');
+
+    // Rota para listar os agendamentos do negócio
+    Route::get('/appointments', [App\Http\Controllers\AppointmentController::class, 'index'])->name('appointments.index');
 });
 
 
