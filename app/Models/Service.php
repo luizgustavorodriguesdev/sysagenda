@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+// Importa a classe correta do framework
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Service extends Model
 {
@@ -18,28 +18,26 @@ class Service extends Model
         'price',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
-        'price' => 'decimal:2', // Garante que o preço seja tratado como um decimal com 2 casas
+        'price' => 'decimal:2',
     ];
 
-    /**
-     * Define a relação: um Serviço (Service) pertence a um Negócio (Business).
-     */
-    public function business(): BelongsTo
+    public function business()
     {
         return $this->belongsTo(Business::class);
     }
 
-    /**
-     * Define a relação: um Serviço (Service) tem muitos Agendamentos (Appointment).
-     */
-    public function appointments(): HasMany
+    public function appointments()
     {
         return $this->hasMany(Appointment::class);
+    }
+
+    /**
+     * A relação Muitos-para-Muitos entre Serviço e Barbeiro.
+     * A declaração de retorno agora corresponde exatamente ao que a função retorna.
+     */
+    public function barbers(): BelongsToMany
+    {
+        return $this->belongsToMany(Barber::class);
     }
 }
