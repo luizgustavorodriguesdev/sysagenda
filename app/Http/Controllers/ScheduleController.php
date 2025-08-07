@@ -1,25 +1,42 @@
 <?php
+// Em app/Http/Controllers/ScheduleController.php
 
 namespace App\Http\Controllers;
 
+use App\Models\Barber; // Importamos o modelo Barber
 use Illuminate\Http\Request;
 
 class ScheduleController extends Controller
 {
-    public function edit()
+    /**
+     * Mostra o formulário para editar os horários de um barbeiro específico.
+     */
+    public function edit(Request $request)
     {
-        // Pega o primeiro negócio do usuário autenticado
-        $business = auth()->user()->businesses->first();
+        // 1. Pega o negócio do utilizador logado.
+        $business = $request->user()->businesses()->first();
 
-        // Se não houver negócio, redireciona para o dashboard.
+        // Se não houver negócio, não há o que fazer.
         if (!$business) {
-            return redirect()->route('dashboard');
+            return redirect()->route('dashboard')->with('error', 'Nenhum negócio encontrado.');
         }
 
-        // Busca todos os horários salvos para este negócio
-        $schedules = $business->schedules()->get();
+        // 2. Busca todos os barbeiros deste negócio para preencher o dropdown.
+        $barbers = $business->barbers()->get();
 
-        // Organiza os horários em um array onde a chave é o dia da semana (0=Dom, 1=Seg...)
+        // Se não houver barbeiros, não podemos definir horários.
+        if ($barbers->isEmpty()) {
+            return redirect()->route('barbers.index')->with('error', 'Precisa de adicionar um barbeiro antes de definir horários.');
+        }
+
+        // 3. Determina qual barbeiro está a ser editado.
+        //    Se a URL tiver um '?barber=ID', usa esse ID.
+        //    Caso contrário, pega o primeiro barbeiro da lista como padrão.
+        $selectedBarberId = $request->query('barber', $barbers->first()->id);
+        $selectedBarber = Barber::find($selectedBarberId);
+
+        // 4. Busca os horários salvos para o barbeiro SELECIONADO.
+        $schedules = $selectedBarber->schedules()->get();
         $scheduleByDay = [];
         foreach ($schedules as $schedule) {
             $scheduleByDay[$schedule->day_of_week] = [
@@ -28,73 +45,50 @@ class ScheduleController extends Controller
             ];
         }
 
-        // Um array para ajudar a renderizar os dias na view
+        // 5. Retorna a view, passando todos os dados necessários.
         $daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-
-        // Retorna a view, passando os dados necessários
-        return view('schedule.edit', compact('scheduleByDay', 'daysOfWeek'));
+        return view('schedule.edit', compact('barbers', 'selectedBarber', 'scheduleByDay', 'daysOfWeek'));
     }
 
-    /*
-     * Atualiza os horários de atendimento no banco de dados.
-     */
     /**
-     * Atualiza os horários de atendimento no banco de dados.
+     * Atualiza os horários de atendimento para um barbeiro específico.
      */
     public function update(Request $request)
     {
-        // Pega o negócio do usuário que está logado.
-        $business = $request->user()->businesses->first();
+        // 1. Validação para garantir que o ID do barbeiro foi enviado.
+        $validated = $request->validate([
+            'barber_id' => 'required|exists:barbers,id'
+        ]);
 
-        // Pega todos os dados de horários enviados pelo formulário.
-        // O resultado será um array, ex: [0 => ['enabled' => 'on', 'start_time' => '09:00', ...], 1 => ...]
+        // 2. Encontra o barbeiro que estamos a editar.
+        $barber = Barber::find($validated['barber_id']);
         $schedulesData = $request->input('schedules', []);
 
-        // Itera sobre cada dia da semana, de 0 (Domingo) a 6 (Sábado).
+        // 3. A lógica de salvar/apagar horários continua a mesma,
+        //    mas agora está ligada ao barbeiro em vez do negócio.
         foreach (range(0, 6) as $dayIndex) {
-
-            // Verifica se o checkbox 'enabled' para este dia específico foi marcado no formulário.
             if (isset($schedulesData[$dayIndex]['enabled'])) {
-                // SE O DIA FOI MARCADO COMO "TRABALHA NESTE DIA"
-
-                // Validação para garantir que, se o dia está habilitado, os horários de início e fim foram preenchidos.
+                // Valida e salva o horário para o barbeiro
                 $request->validate([
                     "schedules.{$dayIndex}.start_time" => 'required',
                     "schedules.{$dayIndex}.end_time" => 'required|after:schedules.'.$dayIndex.'.start_time',
-                ], [
-                    // Mensagens de erro personalizadas em português
-                    "schedules.{$dayIndex}.start_time.required" => "O horário de início para o dia selecionado é obrigatório.",
-                    "schedules.{$dayIndex}.end_time.required" => "O horário de fim para o dia selecionado é obrigatório.",
-                    "schedules.{$dayIndex}.end_time.after" => "O horário de fim deve ser posterior ao horário de início.",
                 ]);
 
-
-                // A "mágica" acontece aqui com updateOrCreate.
-                // Esta função tenta encontrar um registro que corresponda ao primeiro array (as condições).
-                // Se encontrar, ele atualiza o registro com os dados do segundo array.
-                // Se não encontrar, ele cria um novo registro com a junção dos dois arrays.
-                $business->schedules()->updateOrCreate(
+                $barber->schedules()->updateOrCreate(
+                    ['day_of_week' => $dayIndex],
                     [
-                        // Condições para encontrar o registro:
-                        'day_of_week' => $dayIndex,
-                    ],
-                    [
-                        // Valores para atualizar ou criar:
                         'start_time' => $schedulesData[$dayIndex]['start_time'],
                         'end_time' => $schedulesData[$dayIndex]['end_time'],
                     ]
                 );
-
             } else {
-                // SE O DIA FOI DESMARCADO
-
-                // Procura por um horário existente para este dia e o exclui do banco de dados.
-                $business->schedules()->where('day_of_week', $dayIndex)->delete();
+                // Apaga o horário para o barbeiro
+                $barber->schedules()->where('day_of_week', $dayIndex)->delete();
             }
         }
 
-        // Após salvar tudo, redireciona o usuário de volta para a mesma página de edição
-        // com uma mensagem de sucesso para que ele veja o resultado.
-        return redirect()->route('schedule.edit')->with('success', 'Horários de atendimento atualizados com sucesso!');
+        // Redireciona de volta para a mesma página, mantendo o barbeiro selecionado na URL,
+        // e mostra uma mensagem de sucesso.
+        return redirect()->route('schedule.edit', ['barber' => $barber->id])->with('success', 'Horários atualizados com sucesso!');
     }
 }

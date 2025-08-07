@@ -31,7 +31,22 @@
                             <x-text-input id="price" class="block mt-1 w-full" type="number" name="price" :value="old('price', $service->price)" required step="0.01" />
                             <x-input-error :messages="$errors->get('price')" class="mt-2" />
                         </div>
-
+                        <div class="mt-6 border-t pt-4">
+                            <h3 class="font-semibold text-lg text-gray-800 dark:text-gray-200">Barbeiros que realizam este serviço</h3>
+                            <div class="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                @foreach ($barbers as $barber)
+                                    <label for="barber_{{ $barber->id }}" class="flex items-center">
+                                        <input type="checkbox"
+                                            name="barbers[]"
+                                            value="{{ $barber->id }}"
+                                            id="barber_{{ $barber->id }}"
+                                            @if(in_array($barber->id, $associatedBarberIds)) checked @endif  {{-- CONDIÇÃO ADICIONADA AQUI --}}
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                        <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ $barber->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>                        
                         <div class="flex items-center justify-end mt-6">
                             <a href="{{ route('service.index') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 rounded-md">
                                 Cancelar

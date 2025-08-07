@@ -42,10 +42,11 @@ class Business extends Model
     /**
      * Define a relação: um Negócio (Business) tem muitos Horários (Schedule).
      */
-    public function schedules(): HasMany
+    /*public function schedules(): HasMany
     {
         return $this->hasMany(Schedule::class);
-    }
+    }*/
+        
     /**
      * Define a relação: um Negócio (Business) tem muitos Barbeiros (Barber).
      */

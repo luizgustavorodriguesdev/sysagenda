@@ -16,15 +16,14 @@ return new class extends Migration
     {
         Schema::create('schedules', function (Blueprint $table) {
             $table->id();
-            // Chave estrangeira para a tabela 'businesses'
-            $table->foreignId('business_id')->constrained()->onDelete('cascade');
-            // 0 = Domingo, 1 = Segunda, 2 = Terça, etc.
+            // A versão final e correta, criando diretamente com barber_id
+            $table->foreignId('barber_id')->constrained()->onDelete('cascade');
             $table->tinyInteger('day_of_week');
             $table->time('start_time');
             $table->time('end_time');
 
-            // Adicionando uma chave única para evitar horários duplicados para o mesmo dia no mesmo negócio
-            $table->unique(['business_id', 'day_of_week']);
+            // Garante que não podemos ter duas entradas para o mesmo dia para o mesmo barbeiro
+            $table->unique(['barber_id', 'day_of_week']);
         });
     }
 

@@ -5,22 +5,37 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+// Importa a classe correta do framework
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Barber extends Model
 {
     use HasFactory;
-    //HasFactory é um trait do Laravel usado em modelos Eloquent para facilitar a criação de instâncias de modelos em testes usando factories.
 
-    /**
-     * Os atributos que são atribuíveis em massa.
-    */
-    protected $fillable = ['business_id', 'name', 'email', 'phone'];
-    
-    /**
-     * Define a relação com o modelo Business.
-     */
+    protected $fillable = [
+        'business_id',
+        'name',
+        'email',
+        'phone',
+    ];
+
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(Schedule::class);
+    }
+
+    /**
+     * A relação Muitos-para-Muitos entre Barbeiro e Serviço.
+     * A declaração de retorno agora corresponde exatamente ao que a função retorna.
+     */
+    public function services(): BelongsToMany
+    {
+        return $this->belongsToMany(Service::class);
     }
 }
