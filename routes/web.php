@@ -50,6 +50,9 @@ Route::middleware('auth')->group(function () {
 
     // Rota para listar os agendamentos do negócio
     Route::get('/appointments', [App\Http\Controllers\AppointmentController::class, 'index'])->name('appointments.index');
+
+    // Rota de recurso para CRUD completo de barbeiros
+    Route::resource('barbers', App\Http\Controllers\BarberController::class);
 });
 
 
