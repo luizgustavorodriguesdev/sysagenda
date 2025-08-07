@@ -46,4 +46,11 @@ class Business extends Model
     {
         return $this->hasMany(Schedule::class);
     }
+    /**
+     * Define a relação: um Negócio (Business) tem muitos Barbeiros (Barber).
+     */
+    public function barbers(): HasMany
+    {
+        return $this->hasMany(Barber::class);
+    }
 }

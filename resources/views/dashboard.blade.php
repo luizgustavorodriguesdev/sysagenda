@@ -35,6 +35,10 @@
                             class="inline-block bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
                             Ver Agendamentos
                             </a>
+                            <a href="{{ route('barbers.index') }}"
+                            class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">
+                            Gerir Barbeiros
+                            </a>
                         </div>
                     @else
 
