@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-// Importa a classe correta do framework
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Barber extends Model
@@ -30,12 +29,17 @@ class Barber extends Model
         return $this->hasMany(Schedule::class);
     }
 
-    /**
-     * A relação Muitos-para-Muitos entre Barbeiro e Serviço.
-     * A declaração de retorno agora corresponde exatamente ao que a função retorna.
-     */
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class);
+    }
+
+    /**
+     * ADICIONE ESTE MÉTODO - A RELAÇÃO QUE FALTAVA
+     * Define a relação: Um Barbeiro (Barber) tem muitos Agendamentos (Appointment).
+     */
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
     }
 }
