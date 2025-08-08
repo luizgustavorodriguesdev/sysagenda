@@ -12,6 +12,7 @@ class Appointment extends Model
 
     protected $fillable = [
         'service_id',
+        'barber_id', // Adicionada a coluna barber_id
         'customer_name',
         'customer_email',
         'start_at',
@@ -20,7 +21,8 @@ class Appointment extends Model
     ];
 
     protected $casts = [
-        'start_at' => 'datetime', // Garante que estas colunas sejam tratadas como objetos Carbon/DateTime
+        // Garante que estas colunas sejam tratadas como objetos Carbon/DateTime
+        'start_at' => 'datetime', 
         'end_at' => 'datetime',
     ];
 

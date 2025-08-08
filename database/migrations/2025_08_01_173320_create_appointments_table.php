@@ -9,17 +9,22 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+   public function up(): void
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
-            // Chave estrangeira para a tabela 'services'. Se o serviço for deletado, o agendamento também será.
             $table->foreignId('service_id')->constrained()->onDelete('cascade');
+
+            // NOVA COLUNA ADICIONADA:
+            // O agendamento agora pertence a um barbeiro específico.
+            // A chave estrangeira é anulável (nullable) por agora, mas vamos torná-la obrigatória na lógica.
+            $table->foreignId('barber_id')->constrained()->onDelete('cascade');
+
             $table->string('customer_name');
             $table->string('customer_email');
             $table->dateTime('start_at');
             $table->dateTime('end_at');
-            $table->string('status')->default('confirmed'); // Ex: confirmed, cancelled
+            $table->string('status')->default('confirmed');
             $table->timestamps();
         });
     }
