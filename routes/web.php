@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\BarberController;
 use App\Http\Controllers\BusinessController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,56 +16,54 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Rota da página inicial.
 Route::get('/', function () {
     return view('welcome');
 });
 
 //======================================================================
-// ROTAS PÚBLICAS (APIs e rotas específicas)
+// ROTAS PÚBLICAS
 //======================================================================
-
-// Rota para a nossa API interna de disponibilidade que retorna JSON.
 Route::get('/api/availability/service/{service}/date/{date}', [PublicBookingController::class, 'getAvailability'])->name('public.booking.availability');
-
-// Rota para salvar o agendamento final feito pelo cliente.
 Route::post('/booking/store', [PublicBookingController::class, 'storeBooking'])->name('public.booking.store');
 
 
 //======================================================================
-// ROTAS PRIVADAS (Exigem que o usuário esteja autenticado)
+// ROTAS PRIVADAS (Exigem Autenticação)
 //======================================================================
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
 
+    // Rota principal do Dashboard (com lógica de redirecionamento)
+    Route::get('/dashboard', function () {
+        if (auth()->user()->isAdmin()) {
+            return view('dashboard');
+        }
+        // ESTA LINHA CAUSA O ERRO SE A ROTA ABAIXO NÃO EXISTIR
+        return redirect()->route('client.dashboard');
+    })->middleware(['verified'])->name('dashboard');
+
+    // --- Rotas do Dono do Negócio (Admin) ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
     Route::resource('business', BusinessController::class)->only(['create', 'store']);
     Route::resource('service', ServiceController::class);
-
     Route::get('/schedule/edit', [ScheduleController::class, 'edit'])->name('schedule.edit');
     Route::put('/schedule/update', [ScheduleController::class, 'update'])->name('schedule.update');
+    Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+    Route::resource('barbers', BarberController::class);
 
-    // Rota para listar os agendamentos do negócio
-    Route::get('/appointments', [App\Http\Controllers\AppointmentController::class, 'index'])->name('appointments.index');
-
-    // Rota de recurso para CRUD completo de barbeiros
-    Route::resource('barbers', App\Http\Controllers\BarberController::class);
+    // --- ROTAS DO CLIENTE ---
+    // ESTE BLOCO PRECISA DE EXISTIR PARA O ERRO DESAPARECER
+    Route::prefix('client')->name('client.')->group(function () {
+    Route::get('/dashboard', [ClientDashboardController::class, 'index'])->name('dashboard');
+    });
 });
 
 
 //======================================================================
-// ORDEM FINAL DAS ROTAS
+// ROTAS DE AUTENTICAÇÃO E PÚBLICA PRINCIPAL
 //======================================================================
-
-// 1. Carrega todas as rotas de autenticação do Breeze (/login, /register, etc.).
 require __DIR__.'/auth.php';
 
-// 2. POR ÚLTIMO, a rota "apanha-tudo" do slug do negócio.
-//    Agora, se uma rota como /login for encontrada acima, o Laravel usá-la-á primeiro.
 Route::get('/{business:slug}', [PublicBookingController::class, 'show'])->name('public.booking.show');

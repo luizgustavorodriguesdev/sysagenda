@@ -13,6 +13,10 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+    // ADICIONAD CONSTANTES PARA DEFINIÇÃO DO TIPO DE USUÁRIO
+    public const ROLE_CLIENT = 'client';
+    public const ROLE_ADMIN = 'admin';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -22,6 +26,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        // Não adicionamos 'role' aqui, pois usaremos o valor padrão da base de dados.
     ];
 
     /**
@@ -54,4 +59,31 @@ class User extends Authenticatable
     {
         return $this->hasMany(Business::class);
     }
+
+    //ADICIONADO MÉTODO PARA VERIFICAR SE O USUÁRIO É ADMIN
+    /*
+    * Verifica se o usuário é um admin.
+    */
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    //ADICIONADO MÉTODO PARA VERIFICAR SE O USUÁRIO É CLIENTE
+    /*
+    * Verifica se o usuário é um cliente.
+    */
+    public function isClient(): bool
+    {
+        return $this->role === self::ROLE_CLIENT;
+    }
+    
+    /**
+     * Define a relação: um Usuário (User) tem muitos Agendamentos (Appointments).
+     */
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
+    }
+
 }
