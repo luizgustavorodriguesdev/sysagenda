@@ -8,9 +8,30 @@
 
     <title>Agendamento em {{ $business->name }}</title>
 
+    {{-- Em resources/views/public/show.blade.php, dentro de <head> --}}
+    <style>
+        .slot-button.active {
+            background-color: #6d28d9; /* Um tom de roxo (indigo-700) */
+            color: #ffffff;
+            border-color: #6d28d9;
+        }
+    </style>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 font-sans antialiased">
+    {{-- ADICIONE ESTE BLOCO --}}
+    @auth('web')
+        <script>
+            // Se o utilizador estiver logado, criamos um objeto JavaScript 'authenticatedUser'
+            // com os seus dados. Se for um visitante, esta variável nunca será criada.
+            window.authenticatedUser = {
+                name: "{{ auth()->user()->name }}",
+                email: "{{ auth()->user()->email }}"
+            };
+        </script>
+    @endauth
+    {{-- FIM DO BLOCO --}}
     <div class="container mx-auto p-4 md:p-8">
         <div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 md:p-8">
             <header class="text-center mb-8">
@@ -53,10 +74,14 @@
                                     </select>
                                 </div>
 
-                                {{-- PASSO 2: ESCOLHER A DATA --}}
+                               {{-- PASSO 2: ESCOLHER A DATA --}}
                                 <div class="mb-4">
-                                     <label for="date-picker-{{ $service->id }}" class="block font-semibold mb-2 text-gray-700 dark:text-gray-300">Escolha uma data:</label>
-                                    <input type="date" id="date-picker-{{ $service->id }}" class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm" min="{{ now()->format('Y-m-d') }}" onchange="fetchAvailability({{ $service->id }})">
+                                    <label for="date-picker-{{ $service->id }}" class="block font-semibold mb-2 text-gray-700 dark:text-gray-300">Escolha uma data:</label>
+                                    <input type="date"
+                                        id="date-picker-{{ $service->id }}"
+                                        class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm"
+                                        min="{{ now()->format('Y-m-d') }}" {{-- ADICIONE ESTA LINHA --}}
+                                        onchange="fetchAvailability({{ $service->id }})">
                                 </div>
 
                                 {{-- PASSO 3: VER OS HORÁRIOS --}}
@@ -99,7 +124,7 @@
 
     {{-- BLOCO DE JAVASCRIPT --}}
     <script>
-        // Função assíncrona para buscar a disponibilidade na nossa API
+        // Função para buscar a disponibilidade na nossa API
         async function fetchAvailability(serviceId) {
             const datePicker = document.getElementById(`date-picker-${serviceId}`);
             const barberPicker = document.getElementById(`barber-picker-${serviceId}`);
@@ -107,10 +132,8 @@
             const selectedBarberId = barberPicker.value;
 
             const slotsContainer = document.getElementById(`availability-slots-${serviceId}`);
-            // Esconde o formulário final sempre que uma nova data/barbeiro é selecionado
             document.getElementById(`booking-form-${serviceId}`).classList.add('hidden');
 
-            // Se não houver data selecionada, não faz nada
             if (!selectedDate) {
                 slotsContainer.innerHTML = '';
                 return;
@@ -119,9 +142,7 @@
             slotsContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Verificando horários...</p>';
 
             try {
-                // Constrói a URL da API
                 let apiUrl = `/api/availability/service/${serviceId}/date/${selectedDate}`;
-                // Se um barbeiro específico foi selecionado, adiciona como um parâmetro query
                 if (selectedBarberId) {
                     apiUrl += `?barber_id=${selectedBarberId}`;
                 }
@@ -131,17 +152,15 @@
                 const data = await response.json();
 
                 slotsContainer.innerHTML = '';
-                // Se a API retornou horários, cria os botões
                 if (data.available_slots && data.available_slots.length > 0) {
                     data.available_slots.forEach(slot => {
                         const button = document.createElement('button');
-                        button.className = 'bg-gray-200 dark:bg-gray-600 hover:bg-indigo-600 hover:text-white dark:hover:text-white text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded';
+                        button.className = 'slot-button bg-gray-200 dark:bg-gray-600 hover:bg-indigo-600 hover:text-white dark:hover:text-white text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded';
                         button.textContent = slot;
-                        button.onclick = () => showBookingForm(serviceId, selectedDate, slot);
+                        button.onclick = (event) => showBookingForm(serviceId, selectedDate, slot, event.currentTarget);
                         slotsContainer.appendChild(button);
                     });
                 } else {
-                    // Se não, mostra a mensagem
                     slotsContainer.innerHTML = '<p class="text-red-500">Nenhum horário disponível para esta seleção.</p>';
                 }
             } catch (error) {
@@ -150,39 +169,50 @@
             }
         }
 
-        // Função para mostrar o formulário de confirmação final
-        function showBookingForm(serviceId, date, slot) {
+        // Função para mostrar o formulário de confirmação
+        function showBookingForm(serviceId, date, slot, clickedButton) {
+            const slotsContainer = document.getElementById(`availability-slots-${serviceId}`);
+            slotsContainer.querySelectorAll('.slot-button').forEach(btn => btn.classList.remove('active'));
+            clickedButton.classList.add('active');
+
             const formContainer = document.getElementById(`booking-form-${serviceId}`);
             const selectedSlotText = document.getElementById(`selected-slot-text-${serviceId}`);
             const selectedBarberText = document.getElementById(`selected-barber-text-${serviceId}`);
             const barberPicker = document.getElementById(`barber-picker-${serviceId}`);
 
-            // Formata a data para um formato legível (ex: 08/08/2025)
-            const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('pt-BR');
+            const customerNameInput = document.getElementById(`customer_name-${serviceId}`);
+            const customerEmailInput = document.getElementById(`customer_email-${serviceId}`);
 
-            // Pega o nome do barbeiro selecionado
+            if (typeof window.authenticatedUser !== 'undefined') {
+                customerNameInput.value = window.authenticatedUser.name;
+                customerEmailInput.value = window.authenticatedUser.email;
+                customerNameInput.readOnly = true;
+                customerEmailInput.readOnly = true;
+            } else {
+                customerNameInput.value = '';
+                customerEmailInput.value = '';
+                customerNameInput.readOnly = false;
+                customerEmailInput.readOnly = false;
+            }
+
+            const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('pt-BR');
             let barberName = "Qualquer profissional disponível";
             if (barberPicker.value) {
                 barberName = barberPicker.options[barberPicker.selectedIndex].text;
             }
 
-            // Preenche os detalhes no formulário de confirmação
             selectedBarberText.textContent = barberName;
             selectedSlotText.textContent = `${formattedDate} às ${slot}`;
-            // Mostra o formulário
             formContainer.classList.remove('hidden');
         }
 
-        // Função assíncrona para submeter o agendamento final
+        // Função para submeter o agendamento final (A FUNÇÃO QUE ESTAVA EM FALTA)
         async function submitBooking(serviceId) {
-            // Pega os dados dos campos do formulário
             const customerName = document.getElementById(`customer_name-${serviceId}`).value;
             const customerEmail = document.getElementById(`customer_email-${serviceId}`).value;
             const barberId = document.getElementById(`barber-picker-${serviceId}`).value;
             const date = document.getElementById(`date-picker-${serviceId}`).value;
             const time = document.getElementById(`selected-slot-text-${serviceId}`).textContent.split(' às ')[1];
-
-            // Pega o token CSRF da meta tag no <head>
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             const bookingData = {
@@ -207,16 +237,10 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    // Se o agendamento foi bem-sucedido, mostra a mensagem de sucesso
                     const formContainer = document.getElementById(`booking-form-${serviceId}`);
-                    formContainer.innerHTML = `<div class="text-center p-4 bg-green-100 text-green-700 rounded-lg">
-                                                    <h4 class="font-bold text-lg">Obrigado!</h4>
-                                                    <p>O seu agendamento para ${time} foi confirmado com sucesso.</p>
-                                               </div>`;
-                    // Esconde os seletores de horário
+                    formContainer.innerHTML = `<div class="text-center p-4 bg-green-100 text-green-700 rounded-lg"><h4 class="font-bold text-lg">Obrigado!</h4><p>O seu agendamento para ${time} foi confirmado com sucesso.</p></div>`;
                     document.getElementById(`availability-slots-${serviceId}`).innerHTML = '';
                 } else {
-                    // Se houve um erro (ex: horário já preenchido), mostra um alerta
                     alert(result.error || 'Ocorreu um erro ao tentar confirmar o seu agendamento.');
                 }
             } catch (error) {
