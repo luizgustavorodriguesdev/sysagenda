@@ -60,4 +60,19 @@ class AppointmentController extends Controller
 
         return response()->json(['success' => 'Agendamento confirmado com sucesso!']);
     }
+    /**
+     * "Apaga" um agendamento, alterando o seu status para 'cancelled'.
+     */
+    public function destroy(Appointment $appointment)
+    {
+        // Futuramente, aqui podemos adicionar uma verificação de segurança (Policy)
+        // para garantir que o admin só pode cancelar agendamentos do seu negócio.
+
+        // Altera o status do agendamento
+        $appointment->status = 'cancelled';
+        $appointment->save(); // Salva a alteração na base de dados
+
+        // Redireciona de volta para a lista com uma mensagem de sucesso
+        return redirect()->route('appointments.index')->with('success', 'Agendamento cancelado com sucesso!');
+    }
 }

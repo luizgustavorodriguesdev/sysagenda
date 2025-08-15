@@ -9,6 +9,7 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
+use App\Http\Controllers\Client\AppointmentController as ClientAppointmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,14 +51,18 @@ Route::middleware('auth')->group(function () {
     Route::resource('service', ServiceController::class);
     Route::get('/schedule/edit', [ScheduleController::class, 'edit'])->name('schedule.edit');
     Route::put('/schedule/update', [ScheduleController::class, 'update'])->name('schedule.update');
-    Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+    //Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+    // Esta única linha cria as rotas para index (listar) e destroy (apagar).
+    Route::resource('appointments', App\Http\Controllers\AppointmentController::class)->only(['index', 'destroy']);
     Route::resource('barbers', BarberController::class);
 
-    // --- ROTAS DO CLIENTE ---
-    // ESTE BLOCO PRECISA DE EXISTIR PARA O ERRO DESAPARECER
+    // --- ROTAS DO CLIENTE ---    
     Route::prefix('client')->name('client.')->group(function () {
-    Route::get('/dashboard', [ClientDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [ClientDashboardController::class, 'index'])->name('dashboard');
+        // ADICIONE ESTA NOVA ROTA PARA O CANCELAMENTO
+        Route::delete('/appointments/{appointment}', [ClientAppointmentController::class, 'destroy'])->name('appointments.destroy');
     });
+
 });
 
 
