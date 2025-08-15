@@ -21,9 +21,11 @@ class PublicBookingController extends Controller
         return view('public.show', compact('business', 'services'));
     }
 
+    /**
+     * Calcula e retorna os horários disponíveis.
+     */
     public function getAvailability(Request $request, Service $service, $date)
     {
-        // ... (código existente)
         $bookingDate = Carbon::parse($date)->startOfDay();
         $dayOfWeek = $bookingDate->dayOfWeek;
         $barberId = $request->query('barber_id');
@@ -50,10 +52,14 @@ class PublicBookingController extends Controller
                 $startTime->addMinutes($serviceDuration);
             }
 
+            // ================== A CORREÇÃO ESTÁ AQUI ==================
+            // Agora só buscamos os agendamentos que estão com o status 'confirmed'.
             $existingAppointments = $barber->appointments()
+                ->where('status', 'confirmed')
                 ->whereDate('start_at', $bookingDate)
                 ->get()
                 ->pluck('start_at');
+            // =========================================================
 
             $bookedSlots = $existingAppointments->map(function ($appointmentTime) {
                 return Carbon::parse($appointmentTime)->format('H:i');
