@@ -6,33 +6,37 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany; // Adicione esta linha no topo do arquivo
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Laravel\Cashier\Billable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, Billable;
 
-    // ADICIONAD CONSTANTES PARA DEFINIÇÃO DO TIPO DE USUÁRIO
-    public const ROLE_CLIENT = 'client';
     public const ROLE_ADMIN = 'admin';
+    public const ROLE_CLIENT = 'client';
+    public const ROLE_SUPER_ADMIN = 'super-admin';
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
         'name',
         'email',
         'password',
-        // Não adicionamos 'role' aqui, pois usaremos o valor padrão da base de dados.
+        'plan_id', 
+        'subscription_ends_at',
+        'role',   
+        'trial_ends_at'     
     ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -40,50 +44,54 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'trial_ends_at' => 'datetime',
+        'subscription_ends_at' => 'datetime',
+    ];
 
-    /**
-     * Define a relação: um Usuário (User) tem muitos Negócios (Business).
-     */
     public function businesses(): HasMany
     {
         return $this->hasMany(Business::class);
     }
 
-    //ADICIONADO MÉTODO PARA VERIFICAR SE O USUÁRIO É ADMIN
-    /*
-    * Verifica se o usuário é um admin.
-    */
-    public function isAdmin(): bool
-    {
-        return $this->role === self::ROLE_ADMIN;
-    }
-
-    //ADICIONADO MÉTODO PARA VERIFICAR SE O USUÁRIO É CLIENTE
-    /*
-    * Verifica se o usuário é um cliente.
-    */
-    public function isClient(): bool
-    {
-        return $this->role === self::ROLE_CLIENT;
-    }
-    
-    /**
-     * Define a relação: um Usuário (User) tem muitos Agendamentos (Appointments).
-     */
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isClient(): bool
+    {
+        return $this->role === self::ROLE_CLIENT;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
+    }
+
+    public function isOnTrial(): bool
+    {
+        return $this->trial_ends_at && $this->trial_ends_at->isFuture();
+    }
+
+    public function isSubscriptionActive(): bool
+    {
+        return $this->subscription_ends_at && $this->subscription_ends_at->isFuture();
+    }
+
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class);
+    }
 }

@@ -58,6 +58,7 @@ class ServiceController extends Controller
      */
     public function edit(Service $service)
     {
+        $this->authorize('update', $service);
         // A CORREÇÃO ESTÁ AQUI: Buscamos todos os barbeiros...
         $barbers = auth()->user()->businesses()->first()->barbers;
         // ...e também os que já estão associados ao serviço.
@@ -72,6 +73,7 @@ class ServiceController extends Controller
      */
     public function update(Request $request, Service $service)
     {
+        $this->authorize('update', $service);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'duration_minutes' => 'required|integer|min:1',
@@ -91,6 +93,7 @@ class ServiceController extends Controller
      */
     public function destroy(Service $service)
     {
+        $this->authorize('delete', $service);
         $service->delete();
         return redirect()->route('service.index')->with('success', 'Serviço apagado com sucesso!');
     }
