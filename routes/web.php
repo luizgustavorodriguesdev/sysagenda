@@ -11,13 +11,19 @@ use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\SuperAdmin\DashboardController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\BusinessRegisteredUserController;
 use App\Http\Controllers\ClientManagementController;
 use App\Http\Middleware\CheckSubscription;
 use App\Http\Middleware\IsSuperAdmin;
+
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SuperAdmin\PaymentController;
+use App\Http\Controllers\SuperAdmin\DashboardController;
+use App\Http\Controllers\SuperAdmin\PlanController;
+
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -70,15 +76,28 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
-// --- GRUPO DE ROTAS DO SUPER-ADMIN (SEPARADO E SEGURO) ---
 Route::middleware(['auth', IsSuperAdmin::class])
-    ->prefix('admincp')
-    ->name('superadmin.')
+    ->prefix('admincp') // Todas as URLs começarão com /admincp/...
+    ->name('superadmin.') // Todos os nomes de rota começarão com 'superadmin.'
     ->group(function () {
+
+        // Dashboard Principal
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Gestão de Clientes (Donos de Negócio)
+        Route::get('/clients/create', [DashboardController::class, 'createClient'])->name('clients.create');
+        Route::post('/clients', [DashboardController::class, 'storeClient'])->name('clients.store');
         Route::get('/clients/{user}/edit', [DashboardController::class, 'editClient'])->name('clients.edit');
         Route::put('/clients/{user}', [DashboardController::class, 'updateClient'])->name('clients.update');
+
+        // Gestão de Planos (CRUD Completo)
+        Route::resource('plans', PlanController::class);
+
+        // Gestão de Pagamentos
+        Route::post('/clients/{user}/payments', [PaymentController::class, 'store'])->name('clients.payments.store');
+        Route::get('/payments/{payment}/edit', [PaymentController::class, 'edit'])->name('payments.edit');
+        Route::put('/payments/{payment}', [PaymentController::class, 'update'])->name('payments.update');
+        Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
     });
 
 // Rota para mostrar o formulário de registo do Dono de Negócio

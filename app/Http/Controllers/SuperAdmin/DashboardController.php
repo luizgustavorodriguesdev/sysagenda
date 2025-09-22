@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Plan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash; // Importe o Hash
+use Illuminate\Validation\Rules; // Importe as Regras de Validação
+
 
 class DashboardController extends Controller
 {
@@ -18,12 +21,14 @@ class DashboardController extends Controller
     /**
      * Mostra o formulário para editar os dados de um cliente (utilizador admin).
      */
-    public function editClient(User $user) // <-- A CORREÇÃO ESTÁ AQUI
+    // Em app/Http/Controllers/SuperAdmin/DashboardController.php
+
+    public function editClient(User $user)
     {
-        // A assinatura do método PRECISA de ter (User $user) para que o Laravel
-        // injete automaticamente o cliente que está a ser editado a partir da URL.
-        
+        // Carrega as relações para podermos aceder a $user->payments na view
+        $user->load(['plan', 'payments.plan']);
         $plans = Plan::all();
+
         return view('superadmin.edit-client', compact('user', 'plans'));
     }
 
@@ -41,4 +46,32 @@ class DashboardController extends Controller
 
         return redirect()->route('superadmin.dashboard')->with('success', 'Cliente atualizado com sucesso!');
     }
+
+    // NOVO MÉTODO PARA MOSTRAR O FORMULÁRIO DE CRIAÇÃO
+    public function createClient()
+    {
+        return view('superadmin.create-client');
+    }
+
+     // NOVO MÉTODO PARA SALVAR O NOVO CLIENTE
+    public function storeClient(Request $request)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', Rules\Password::defaults()],
+        ]);
+
+        User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => User::ROLE_ADMIN, // Define a role como 'admin'
+            'trial_ends_at' => now()->addDays(15), // Inicia o período de teste de 15 dias
+        ]);
+
+        return redirect()->route('superadmin.dashboard')->with('success', 'Novo cliente criado e período de teste iniciado!');
+    }
+
+
 }

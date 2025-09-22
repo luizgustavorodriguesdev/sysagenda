@@ -7,8 +7,18 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="mb-6 flex space-x-4">                
+                <a href="{{ route('superadmin.plans.index') }}" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                    Gerir Planos
+                </a>               
+                
+                <a href="{{ route('superadmin.clients.create') }}" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                    + Adicionar Novo Cliente
+                </a>
+            </div>
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
+                    <h3 class="text-lg font-semibold mb-2">Lista de Clientes</h3>
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead>
                             <tr>

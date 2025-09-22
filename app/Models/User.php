@@ -94,4 +94,38 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Plan::class);
     }
+
+    // Relação com pagamentos
+    // Em User.php
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class)->latest(); // .latest() ordena os pagamentos do mais recente para o mais antigo
+    }
+
+    /**
+     * NOVO MÉTODO: O Sincronizador de Assinatura
+     *
+     * Calcula a data de fim da assinatura com base no histórico de pagamentos ativos
+     * e atualiza o registo do utilizador.
+     */
+    public function updateSubscriptionStatusFromPayments(): void
+    {
+        // 1. Busca o pagamento ATIVO deste utilizador que tem a data de validade mais recente.
+        $latestActivePayment = $this->payments()
+                                    ->where('status', 'active')
+                                    ->orderBy('new_subscription_ends_at', 'desc')
+                                    ->first();
+
+        // 2. Determina qual deve ser a nova data de fim da assinatura.
+        $newSubscriptionEndDate = $latestActivePayment
+                                    ? $latestActivePayment->new_subscription_ends_at // Se encontrou um, usa a data dele.
+                                    : null; // Se não encontrou nenhum, a assinatura está inativa (null).
+
+        // 3. Atualiza o utilizador com a nova data correta.
+        $this->update([
+            'subscription_ends_at' => $newSubscriptionEndDate,
+            // Também atualizamos o plano para o do último pagamento ativo, se houver.
+            'plan_id' => $latestActivePayment ? $latestActivePayment->plan_id : $this->plan_id,
+        ]);
+    }
 }
